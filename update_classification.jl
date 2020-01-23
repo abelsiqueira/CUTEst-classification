@@ -9,17 +9,25 @@ it is not updated. If you do, please open an issue at
 [https://github.com/JuliaSmoothOptimizers/CUTEst.jl](https://github.com/JuliaSmoothOptimizers/CUTEst.jl)
 """
 function update_classification()
-  classdb = open(readlines, joinpath(ENV["MASTSIF"], "CLASSF.DB"))
-  problems = OrderedDict()
-  nlp = 0
-  for line in classdb
+  newclassdb = open(readlines, joinpath(ENV["MASTSIF"], "CLASSF.DB"))
+  oldclassdb = open(readlines, "CLASSF.DB")
+  if oldclassdb == newclassdb
+    println("Nothing to do")
+    return
+  end
+
+  list = split.(setdiff(newclassdb, oldclassdb) ∪ setdiff(oldclassdb, newclassdb))
+
+  problems = JSON.parse(open("classf.json"))
+
+  for line in list
     sline = split(line)
     p = String(sline[1])
     cl = split(sline[2], "")
 
     print("Problem $p... ")
+    nlp = CUTEstModel(p)
     try
-      nlp = CUTEstModel(p)
       problems[p] = Dict(
           :objtype          => classdb_objtype[cl[1]],
           :contype          => classdb_contype[cl[2]],
@@ -54,7 +62,9 @@ function update_classification()
       finalize(nlp)
     end
   end
-  open(joinpath(dirname(@__FILE__), "classf.json"), "w") do jsonfile
+  open("classf.json", "w") do jsonfile
     JSON.print(jsonfile, problems, 2)
   end
 end
+
+update_classification()
