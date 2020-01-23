@@ -1,3 +1,4 @@
+using CUTEst
 import DataStructures: OrderedDict
 using JSON
 
@@ -9,16 +10,16 @@ it is not updated. If you do, please open an issue at
 [https://github.com/JuliaSmoothOptimizers/CUTEst.jl](https://github.com/JuliaSmoothOptimizers/CUTEst.jl)
 """
 function update_classification()
-  newclassdb = open(readlines, joinpath(ENV["MASTSIF"], "CLASSF.DB"))
-  oldclassdb = open(readlines, "CLASSF.DB")
+  newclassdb = readlines(joinpath(ENV["MASTSIF"], "CLASSF.DB"))
+  oldclassdb = readlines("CLASSF.DB")
   if oldclassdb == newclassdb
     println("Nothing to do")
     return
   end
 
-  list = split.(setdiff(newclassdb, oldclassdb) ∪ setdiff(oldclassdb, newclassdb))
+  list = sort(setdiff(newclassdb, oldclassdb) ∪ setdiff(oldclassdb, newclassdb))
 
-  problems = JSON.parse(open("classf.json"))
+  problems = OrderedDict(JSON.parse(open("classf.json")))
 
   for line in list
     sline = split(line)
@@ -29,11 +30,11 @@ function update_classification()
     nlp = CUTEstModel(p)
     try
       problems[p] = Dict(
-          :objtype          => classdb_objtype[cl[1]],
-          :contype          => classdb_contype[cl[2]],
+          :objtype          => CUTEst.classdb_objtype[cl[1]],
+          :contype          => CUTEst.classdb_contype[cl[2]],
           :regular          => cl[3] == "R",
           :derivative_order => Int(cl[4][1]-'0'),
-          :origin           => classdb_origin[cl[6]],
+          :origin           => CUTEst.classdb_origin[cl[6]],
           :has_internal_var => cl[7] == "Y",
           :variables        => Dict(
             :can_choose     => sline[3][1] == "V",
@@ -57,11 +58,13 @@ function update_classification()
       )
       println("done")
     catch ex
+      ex isa InterrupException && rethrow(ex)
       println("errored: $ex")
     finally
       finalize(nlp)
     end
   end
+  sort!(problems)
   open("classf.json", "w") do jsonfile
     JSON.print(jsonfile, problems, 2)
   end

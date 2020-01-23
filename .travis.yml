@@ -1,0 +1,19 @@
+language: julia
+
+os:
+  - linux
+
+julia:
+  - 1.3
+
+addons:
+  apt_packages:
+    - gfortran
+
+branches:
+  only:
+    - master
+    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/ # tags
+
+script:
+  - julia --project update_classification.jl
