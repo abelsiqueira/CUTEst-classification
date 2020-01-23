@@ -16,4 +16,5 @@ branches:
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/ # tags
 
 script:
+  - julia --project -e 'using Pkg; pkg"add CUTEst.jl#jll"; pkg"instantiate"; pkg"status"'
   - julia --project update_classification.jl
